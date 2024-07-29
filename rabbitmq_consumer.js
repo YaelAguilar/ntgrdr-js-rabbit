@@ -2,6 +2,7 @@ require('dotenv').config();
 const amqp = require('amqplib');
 const { db } = require('./config');
 const io = require('socket.io-client');
+const jwt = require("jsonwebtoken");
 
 async function connectRabbitMQ() {
     try {
@@ -10,13 +11,16 @@ async function connectRabbitMQ() {
 
         const queueNames = ['flujoAgua', 'nivelFertilizante', 'ph'];
 
+        // Generar el token JWT
+        const token = jwt.sign({}, process.env.JWT_SECRET_KEY);
+
         // Conectar al servidor WebSocket
         const socket = io.connect('https://wss.soursop.lat', {
             secure: true,
             reconnection: true,
             rejectUnauthorized: false,
             extraHeaders: {
-                Authorization: `Bearer ${process.env.JWT_SECRET_KEY}`
+                Authorization: `Bearer ${token}`
             }
         });
 
@@ -28,7 +32,6 @@ async function connectRabbitMQ() {
                     console.log(`Received message from ${queue}: ${JSON.stringify(content)}`);
 
                     if (queue === 'flujoAgua') {
-                        // Guardar datos en la tabla consumo_agua
                         const { flow_rate_lpm, total_liters } = content;
                         if (flow_rate_lpm !== undefined && total_liters !== undefined) {
                             const query = 'INSERT INTO consumo_agua (sensor_id, cantidad, litros_por_minuto) VALUES (4, ?, ?)';
@@ -37,7 +40,6 @@ async function connectRabbitMQ() {
                                     console.error('Error inserting data into consumo_agua:', err);
                                 } else {
                                     console.log('Data inserted into consumo_agua:', results);
-                                    // Enviar mensaje al servidor WebSocket
                                     socket.emit('flujoAgua', content);
                                 }
                             });
@@ -45,7 +47,6 @@ async function connectRabbitMQ() {
                             console.error('Invalid data received for flujoAgua:', content);
                         }
                     } else if (queue === 'ph') {
-                        // Guardar datos en la tabla estado_planta
                         const { humidity, temperature, conductivity } = content;
                         if (humidity !== undefined && temperature !== undefined && conductivity !== undefined) {
                             const query = 'INSERT INTO estado_planta (sensor_id, humedad, temperatura, conductividad) VALUES (1, ?, ?, ?)';
@@ -54,7 +55,6 @@ async function connectRabbitMQ() {
                                     console.error('Error inserting data into estado_planta:', err);
                                 } else {
                                     console.log('Data inserted into estado_planta:', results);
-                                    // Enviar mensaje al servidor WebSocket
                                     socket.emit('ph', content);
                                 }
                             });
@@ -71,7 +71,6 @@ async function connectRabbitMQ() {
                                     console.error('Error inserting data into consumo_fertilizante:', err);
                                 } else {
                                     console.log('Data inserted into consumo_fertilizante:', results);
-                                    // Enviar mensaje al servidor WebSocket
                                     socket.emit('nivelFertilizante', content);
                                 }
                             });
@@ -89,7 +88,6 @@ async function connectRabbitMQ() {
                                             console.error('Error inserting data into consumo_fertilizante:', err);
                                         } else {
                                             console.log('Data inserted into consumo_fertilizante:', results);
-                                            // Enviar mensaje al servidor WebSocket
                                             socket.emit('nivelFertilizante', content);
                                         }
                                     });

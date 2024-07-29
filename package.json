@@ -13,6 +13,7 @@
   "dependencies": {
     "amqplib": "^0.10.4",
     "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.10.3"
   }
 }
