@@ -12,7 +12,7 @@ async function connectRabbitMQ() {
         const queueNames = ['flujoAgua', 'nivelFertilizante', 'ph'];
 
         // Generar el token JWT
-        const token = jwt.sign({}, process.env.JWT_SECRET_KEY);
+        const token = jwt.sign(process.env.JWT_SECRET_KEY, process.env.JWT_SECRET_KEY);
 
         // Conectar al servidor WebSocket
         const socket = io.connect('https://wss.soursop.lat', {
