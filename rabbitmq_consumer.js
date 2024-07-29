@@ -1,6 +1,7 @@
 require('dotenv').config();
 const amqp = require('amqplib');
 const { db } = require('./config');
+const io = require('socket.io-client');
 
 async function connectRabbitMQ() {
     try {
@@ -8,6 +9,16 @@ async function connectRabbitMQ() {
         const channel = await connection.createChannel();
 
         const queueNames = ['flujoAgua', 'nivelFertilizante', 'ph'];
+
+        // Conectar al servidor WebSocket
+        const socket = io.connect('https://wss.soursop.lat', {
+            secure: true,
+            reconnection: true,
+            rejectUnauthorized: false,
+            extraHeaders: {
+                Authorization: `Bearer ${process.env.WS_JWT_TOKEN}`
+            }
+        });
 
         for (const queue of queueNames) {
             await channel.assertQueue(queue, { durable: true });
@@ -26,6 +37,8 @@ async function connectRabbitMQ() {
                                     console.error('Error inserting data into consumo_agua:', err);
                                 } else {
                                     console.log('Data inserted into consumo_agua:', results);
+                                    // Enviar mensaje al servidor WebSocket
+                                    socket.emit('flujoAgua', content);
                                 }
                             });
                         } else {
@@ -41,6 +54,8 @@ async function connectRabbitMQ() {
                                     console.error('Error inserting data into estado_planta:', err);
                                 } else {
                                     console.log('Data inserted into estado_planta:', results);
+                                    // Enviar mensaje al servidor WebSocket
+                                    socket.emit('ph', content);
                                 }
                             });
                         } else {
@@ -56,6 +71,8 @@ async function connectRabbitMQ() {
                                     console.error('Error inserting data into consumo_fertilizante:', err);
                                 } else {
                                     console.log('Data inserted into consumo_fertilizante:', results);
+                                    // Enviar mensaje al servidor WebSocket
+                                    socket.emit('nivelFertilizante', content);
                                 }
                             });
                         } else if (content === 'no hay fertilizante') {
@@ -72,6 +89,8 @@ async function connectRabbitMQ() {
                                             console.error('Error inserting data into consumo_fertilizante:', err);
                                         } else {
                                             console.log('Data inserted into consumo_fertilizante:', results);
+                                            // Enviar mensaje al servidor WebSocket
+                                            socket.emit('nivelFertilizante', content);
                                         }
                                     });
                                 }
