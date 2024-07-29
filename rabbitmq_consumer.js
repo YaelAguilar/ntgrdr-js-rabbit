@@ -16,7 +16,7 @@ async function connectRabbitMQ() {
             reconnection: true,
             rejectUnauthorized: false,
             extraHeaders: {
-                Authorization: `Bearer ${process.env.WS_JWT_TOKEN}`
+                Authorization: `Bearer ${process.env.SECRET_KEY}`
             }
         });
 
